@@ -11,6 +11,7 @@ class GeminiWebClient(AIClient):
         self.secure_1psid = secure_1psid
         self.secure_1psidts = secure_1psidts
         self.client = None
+        self.chat_session = None
     
     async def _ensure_client(self):
         if self.client is None:
@@ -18,7 +19,21 @@ class GeminiWebClient(AIClient):
             await self.client.init(auto_refresh=True)
     
     async def chat(self, message: str) -> str:
+        """单次对话，不保留历史记录"""
         await self._ensure_client()
         response = await self.client.generate_content(message, model="gemini-3.0-pro")
         return response.text
-
+    
+    async def chat_history(self, message: str) -> str:
+        """多轮对话，保留历史记录"""
+        await self._ensure_client()
+        
+        if self.chat_session is None:
+            self.chat_session = self.client.start_chat(model="gemini-3.0-pro")
+        
+        response = await self.chat_session.send_message(message)
+        return response.text
+    
+    def reset_chat(self):
+        """重置对话历史，开始新会话"""
+        self.chat_session = None

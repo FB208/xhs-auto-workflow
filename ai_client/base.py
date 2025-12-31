@@ -8,6 +8,15 @@ class AIClient(ABC):
     
     @abstractmethod
     async def chat(self, message: str) -> str:
-        """发送消息并获取回复"""
+        """单次对话，不保留历史记录"""
         pass
-
+    
+    @abstractmethod
+    async def chat_history(self, message: str) -> str:
+        """多轮对话，保留历史记录"""
+        pass
+    
+    @abstractmethod
+    def reset_chat(self):
+        """重置对话历史"""
+        pass
