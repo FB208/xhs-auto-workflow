@@ -17,6 +17,11 @@ class AIClient(ABC):
         pass
     
     @abstractmethod
+    async def image_history(self, message: str) -> str:
+        """生成图片，保留历史记录"""
+        pass
+    
+    @abstractmethod
     def reset_chat(self):
         """重置对话历史"""
         pass

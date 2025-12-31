@@ -2,6 +2,7 @@
 
 from gemini_webapi import GeminiClient
 from .base import AIClient
+import time
 
 
 class GeminiWebClient(AIClient):
@@ -32,6 +33,18 @@ class GeminiWebClient(AIClient):
             self.chat_session = self.client.start_chat(model="gemini-3.0-pro")
         
         response = await self.chat_session.send_message(message)
+        return response.text
+    
+    async def image_history(self, message: str, file_path: str) -> str:
+        """生成图片，保留历史记录, 保存到 file_path"""
+        await self._ensure_client()
+        
+        if self.chat_session is None:
+            self.chat_session = self.client.start_chat(model="gemini-3.0-pro")
+        
+        response = await self.chat_session.send_message(message)
+        for i, image in enumerate(response.images):  
+            await image.save(path=file_path, filename=f"images_{time.strftime('%Y%m%d%H%M%S')}_{i}.png", verbose=True)
         return response.text
     
     def reset_chat(self):
