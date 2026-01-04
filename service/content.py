@@ -33,6 +33,7 @@ async def content_creation(client):
     task = asyncio.create_task(client.chat_history(f"""确定选题是：'''{command}'''。
                                                 我们来继续设计内容。
                                                 内容是要发布到小红书的，这个平台的特点是图文结合，重点在图片，文字只需要配一个简短的标题和一些标签就行。
+                                                封面首图用简洁的大字封面最好。
 
                                                     """))
     response = await show_loading(task)
