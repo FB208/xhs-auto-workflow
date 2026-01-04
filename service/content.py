@@ -56,7 +56,8 @@ async def generate_json(client) -> dict:
                                                    {{
                                                        "title": "标题",
                                                        "tags": ["标签1", "标签2", "标签3"],
-                                                       "content": ["图片1", "图片2", "图片3"]
+                                                       "image_prompt": ["图片1描述", "图片2描述", "图片3描述"]
+                                                       "content":"文案"
                                                    }}
                                                     """))
     response = await show_loading(task)
