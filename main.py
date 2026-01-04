@@ -17,19 +17,17 @@ load_dotenv()
 async def main():
     client = create_client()
     content_json = None
-    # file_path = f"output/{time.strftime('%Y%m%d%H%M%S')}"
+    file_path = f"output/{time.strftime('%Y%m%d%H%M%S')}"
  # 测试用
-    file_path = "output/20260104092835"
-    content_json = load_json(file_path)
+    # file_path = "output/20260104092835"
+    # content_json = load_json(file_path)
     
     while True:
         print("""
               1. 创建内容
               2. 生成图片
-              3. 发布小红书
-              4. 发布抖音
-              5. 发布视频号
-              6. 退出
+              3. 发布
+              4. 退出
               """)
         command = input("请输入命令: ")
         match command:
@@ -58,12 +56,26 @@ async def main():
             case "2":
                 await generate_images(client, content_json, file_path)
             case "3":
-                await publish_xiaohongshu(content_json, file_path, load_json)
+                while True:
+                    print("""
+                          1. 发布小红书
+                          2. 发布抖音
+                          3. 发布视频号
+                          0. 返回上级
+                          """)
+                    command = input("请输入命令: ")
+                    match command:
+                        case "1":
+                            await publish_xiaohongshu(content_json, file_path, load_json)
+                        case "2":
+                            await publish_douyin(content_json, file_path, load_json)
+                        case "3":
+                            await publish_weixin(content_json, file_path, load_json)
+                        case "0":
+                            break
+                        case _:
+                            print("无效命令")
             case "4":
-                await publish_douyin(content_json, file_path, load_json)
-            case "5":
-                await publish_weixin(content_json, file_path, load_json)
-            case "6":
                 print("退出")
                 break
             case _:
