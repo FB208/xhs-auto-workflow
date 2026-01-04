@@ -78,12 +78,12 @@ async def login_with_qrcode(page: Page, context: BrowserContext) -> bool:
     
     # 等待用户扫码登录（最多等待 120 秒）
     try:
-        # 等待页面 URL 变化（登录成功后会跳转）
+        # 等待页面跳转到首页（登录成功后会跳转）
         await page.wait_for_url("**/creator-micro/home**", timeout=120000)
-        
-        # 再次确认登录状态
         await asyncio.sleep(2)
-        if await check_login(page):
+        
+        # 检查 URL 是否还在登录页
+        if "login" not in page.url:
             print("✅ 登录成功!")
             await save_cookies(context)
             return True
