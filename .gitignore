@@ -210,3 +210,5 @@ __marimo__/
 # 自定义
 output/
 douyin_cookies.json
+weixin_cookies.json
+xiaohongshu_cookies.json

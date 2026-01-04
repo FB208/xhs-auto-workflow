@@ -1,6 +1,4 @@
-"""抖音创作者平台客户端 - 基于 Playwright + 反检测 + 人类行为模拟
-参考: https://github.com/dreammis/social-auto-upload
-"""
+"""小红书创作者平台客户端 - 基于 Playwright + 反检测 + 人类行为模拟"""
 
 import os
 import json
@@ -8,16 +6,16 @@ import asyncio
 from playwright.async_api import async_playwright, Page, BrowserContext
 
 from .stealth import (
-    apply_stealth, human_delay, human_click,
+    apply_stealth, human_delay, human_click, 
     remove_popups, find_visible_element, upload_files_visible
 )
 
-# 抖音创作者平台地址
-DOUYIN_CREATOR_URL = "https://creator.douyin.com"
-DOUYIN_UPLOAD_URL = "https://creator.douyin.com/creator-micro/content/upload"
+# 小红书创作者平台地址
+XHS_CREATOR_URL = "https://creator.xiaohongshu.com"
+XHS_UPLOAD_URL = "https://creator.xiaohongshu.com/publish/publish"
 
 # Cookie 存储路径
-COOKIE_FILE = os.getenv("DOUYIN_COOKIE_FILE", "douyin_cookies.json")
+COOKIE_FILE = os.getenv("XHS_COOKIE_FILE", "xiaohongshu_cookies.json")
 
 
 async def save_cookies(context: BrowserContext):
@@ -47,8 +45,8 @@ async def load_cookies(context: BrowserContext) -> bool:
 async def check_login(page: Page) -> bool:
     """检查是否已登录"""
     try:
-        await page.goto(DOUYIN_CREATOR_URL)
-        await page.wait_for_load_state("networkidle", timeout=15000)
+        await page.goto(XHS_CREATOR_URL, timeout=60000)
+        await page.wait_for_load_state("domcontentloaded")
         await human_delay(2000, 4000)
         
         # 检查 URL 是否跳转到登录页
@@ -62,28 +60,28 @@ async def check_login(page: Page) -> bool:
 
 
 async def login_with_qrcode(page: Page, context: BrowserContext) -> bool:
-    """使用二维码登录抖音"""
-    print("🔐 正在打开抖音登录页面...")
+    """使用二维码登录小红书"""
+    print("🔐 正在打开小红书登录页面...")
     
-    await page.goto("https://creator.douyin.com/creator-micro/home")
-    await page.wait_for_load_state("networkidle")
+    await page.goto(XHS_CREATOR_URL, timeout=60000)
+    await page.wait_for_load_state("domcontentloaded")
     
-    print("📱 请使用抖音 APP 扫描二维码登录")
+    print("📱 请使用小红书 APP 扫描二维码登录")
     print("⏳ 等待登录完成...")
     
     try:
-        await page.wait_for_url("**/creator-micro/home**", timeout=120000)
-        await human_delay(1500, 3000)
+        start_time = asyncio.get_event_loop().time()
+        while asyncio.get_event_loop().time() - start_time < 120:
+            await asyncio.sleep(2)
+            if "login" not in page.url:
+                print("✅ 登录成功!")
+                await save_cookies(context)
+                return True
         
-        if "login" not in page.url:
-            print("✅ 登录成功!")
-            await save_cookies(context)
-            return True
-        else:
-            print("❌ 登录失败")
-            return False
+        print("❌ 登录超时")
+        return False
     except Exception as e:
-        print(f"❌ 登录超时或失败: {e}")
+        print(f"❌ 登录失败: {e}")
         return False
 
 
@@ -94,30 +92,31 @@ async def upload_images(
     content: str = "",
     tags: list[str] = None
 ) -> bool:
-    """上传图文到抖音（带人类行为模拟）"""
-    print(f"📤 正在上传图文: {title}")
+    """上传图文到小红书（带人类行为模拟）"""
+    print(f"📤 正在上传图文到小红书...")
     
     try:
-        # 打开上传页面
-        await page.goto(DOUYIN_UPLOAD_URL)
-        await page.wait_for_load_state("networkidle")
-        await human_delay(2000, 4000)
+        # 打开发布页面
+        await page.goto(XHS_UPLOAD_URL, timeout=60000)
+        await page.wait_for_load_state("domcontentloaded")
+        await human_delay(3000, 5000)
+        print("✅ 已进入发布页面")
         
         # 移除弹窗
         await remove_popups(page)
         
         # 切换到图文模式 - 只操作可见元素
-        print("🔄 切换到图文发布模式...")
+        print("🔄 切换到图文模式...")
         
-        image_tab = await find_visible_element(page, 'div[class*="tab-item"]')
+        image_tab = await find_visible_element(page, 'div.creator-tab')
         if image_tab:
-            tabs = await page.locator('div[class*="tab-item"]').all()
+            tabs = await page.locator('div.creator-tab').all()
             for tab in tabs:
                 if await tab.is_visible():
                     box = await tab.bounding_box()
                     if box and box['x'] > 0:
                         text = await tab.inner_text()
-                        if "发布图文" in text:
+                        if "上传图文" in text:
                             await human_click(tab)
                             await human_delay(1500, 2500)
                             print("✅ 已切换到图文模式")
@@ -130,35 +129,42 @@ async def upload_images(
         print(f"⏳ 正在上传 {len(image_paths)} 张图片...")
         print(f"  📷 图片列表: {[os.path.basename(p) for p in image_paths]}")
         
-        await upload_files_visible(page, 'input[type="file"][accept*="image"]', image_paths)
+        await upload_files_visible(page, 'input[type="file"]', image_paths)
         
         # 等待图片上传完成（带随机延迟）
-        await human_delay(3000 + len(image_paths) * 1500, 5000 + len(image_paths) * 2500)
+        await human_delay(3000 + len(image_paths) * 2000, 5000 + len(image_paths) * 3000)
         print("✅ 图片上传完成")
         
         # 填写标题（只操作可见元素）
-        title_input = await find_visible_element(page, 'input[placeholder*="标题"]')
-        if title_input:
-            await human_click(title_input)
-            await human_delay(300, 600)
-            await title_input.fill(title)
-            print(f"✅ 标题已填写: {title}")
+        if title:
+            title_input = await find_visible_element(page, 'input[placeholder*="标题"]')
+            if title_input:
+                await human_click(title_input)
+                await human_delay(300, 600)
+                await title_input.fill(title)
+                print(f"✅ 标题已填写: {title}")
+            else:
+                print("⚠️ 未找到可见的标题输入框")
         
         await human_delay(500, 1000)
         
         # 填写内容
+        full_content = ""
         if content:
-            content_area = await find_visible_element(page, 'textarea, div[contenteditable="true"]')
+            full_content = content
+        if tags:
+            tag_text = " ".join([f"#{tag}" for tag in tags])
+            full_content = f"{full_content}\n\n{tag_text}" if full_content else tag_text
+        
+        if full_content:
+            content_area = await find_visible_element(page, 'div[contenteditable="true"]')
             if content_area:
-                full_content = content
-                if tags:
-                    tag_text = " ".join([f"#{tag}" for tag in tags])
-                    full_content = f"{content}\n\n{tag_text}"
-                
                 await human_click(content_area)
                 await human_delay(300, 600)
                 await content_area.fill(full_content)
                 print("✅ 内容已填写")
+            else:
+                print("⚠️ 未找到可见的内容输入框")
         
         await human_delay(800, 1500)
         
@@ -173,8 +179,8 @@ async def upload_images(
         return False
 
 
-class DouyinClient:
-    """抖音客户端封装"""
+class XiaohongshuClient:
+    """小红书客户端封装"""
     
     def __init__(self, headless: bool = False):
         self.headless = headless

@@ -5,8 +5,10 @@ from ai_client import create_client
 from util.loading import show_loading
 from service.content import topic_discussion, content_creation, generate_json
 from service.image import generate_images
-from service.publish import publish_content
+from service.publish import publish_content as publish_content_mcp  # MCP 版本备用
+from service.publish_xiaohongshu import publish_content as publish_xiaohongshu  # Playwright 版本
 from service.publish_douyin import publish_content as publish_douyin
+from service.publish_weixin import publish_content as publish_weixin
 from util.json_util import save_json, load_json
 
 load_dotenv()
@@ -26,7 +28,8 @@ async def main():
               2. 生成图片
               3. 发布小红书
               4. 发布抖音
-              5. 退出
+              5. 发布视频号
+              6. 退出
               """)
         command = input("请输入命令: ")
         match command:
@@ -55,12 +58,12 @@ async def main():
             case "2":
                 await generate_images(client, content_json, file_path)
             case "3":
-                success = await publish_content(content_json, file_path, load_json)
-                if success:
-                    break
+                await publish_xiaohongshu(content_json, file_path, load_json)
             case "4":
                 await publish_douyin(content_json, file_path, load_json)
             case "5":
+                await publish_weixin(content_json, file_path, load_json)
+            case "6":
                 print("退出")
                 break
             case _:
