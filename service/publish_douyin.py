@@ -3,38 +3,23 @@
 import os
 import glob
 from util.douyin_client import DouyinClient
+from util.console import print_success, print_error, print_info
 
 
 async def publish_content(content_json: dict, file_path: str = None, load_json_func=None) -> bool:
-    """发布图文到抖音
+    """发布图文到抖音"""
+    client = DouyinClient(headless=False)
     
-    参数:
-        content_json: 内容数据，格式如下：
-            {
-                "title": "标题",
-                "tags": ["标签1", "标签2"],
-                "content": "文案",
-                "images": ["url1", "url2"]  # 可选，如果没有则从 file_path 读取本地图片
-            }
-        file_path: 内容目录路径
-        load_json_func: 加载 JSON 的函数
-    
-    返回:
-        成功返回 True，失败返回 False
-    """
-    client = DouyinClient(headless=False)  # 显示浏览器窗口
-    
-    # try:
     await client.start()
     
     # 检查登录状态
     is_logged_in = await client.check_login()
     
     if not is_logged_in:
-        print("🔐 需要登录抖音...")
+        print_info("需要登录抖音...")
         success = await client.login()
         if not success:
-            print("❌ 登录失败")
+            print_error("登录失败")
             return False
     
     # 尝试加载内容
@@ -42,20 +27,20 @@ async def publish_content(content_json: dict, file_path: str = None, load_json_f
         content_json = load_json_func(file_path)
     
     if not content_json:
-        print("❌ 没有内容可发布")
+        print_error("没有内容可发布")
         return False
     
-    # 获取本地图片路径（先转为绝对路径）
+    # 获取本地图片路径
     image_paths = []
     if file_path:
         abs_file_path = os.path.abspath(file_path)
-        print(f"📁 图片目录: {abs_file_path}")
+        print_info(f"图片目录: {abs_file_path}")
         png_files = sorted(glob.glob(os.path.join(abs_file_path, "*.png")))
-        image_paths = png_files  # 已经是绝对路径了
-        print(f"📷 找到 {len(image_paths)} 张图片: {[os.path.basename(f) for f in image_paths]}")
+        image_paths = png_files
+        print_info(f"找到 {len(image_paths)} 张图片")
     
     if not image_paths:
-        print("❌ 没有找到本地图片，抖音需要本地图片路径")
+        print_error("没有找到本地图片，抖音需要本地图片路径")
         return False
     
     # 发布
@@ -71,28 +56,18 @@ async def publish_content(content_json: dict, file_path: str = None, load_json_f
     )
     
     if success:
-        # 等待用户关闭浏览器
         await client.wait_for_close()
         return True
     else:
-        print("❌ 抖音内容填写失败")
+        print_error("抖音内容填写失败")
         await client.close()
         return False
 
 
 async def publish_video(video_path: str, title: str, tags: list[str] = None) -> bool:
-    """发布视频到抖音
-    
-    参数:
-        video_path: 视频文件路径
-        title: 视频标题
-        tags: 标签列表
-    
-    返回:
-        成功返回 True，失败返回 False
-    """
+    """发布视频到抖音"""
     if not os.path.exists(video_path):
-        print(f"❌ 视频文件不存在: {video_path}")
+        print_error(f"视频文件不存在: {video_path}")
         return False
     
     client = DouyinClient(headless=False)
@@ -100,17 +75,15 @@ async def publish_video(video_path: str, title: str, tags: list[str] = None) -> 
     try:
         await client.start()
         
-        # 检查登录状态
         is_logged_in = await client.check_login()
         
         if not is_logged_in:
-            print("🔐 需要登录抖音...")
+            print_info("需要登录抖音...")
             success = await client.login()
             if not success:
-                print("❌ 登录失败")
+                print_error("登录失败")
                 return False
         
-        # 发布视频
         success = await client.upload_video(
             video_path=os.path.abspath(video_path),
             title=title,
@@ -118,12 +91,11 @@ async def publish_video(video_path: str, title: str, tags: list[str] = None) -> 
         )
         
         if success:
-            print("🎉 抖音视频发布成功!")
+            print_success("抖音视频发布成功!")
             return True
         else:
-            print("❌ 抖音视频发布失败")
+            print_error("抖音视频发布失败")
             return False
         
     finally:
         await client.close()
-

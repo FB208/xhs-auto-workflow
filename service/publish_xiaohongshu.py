@@ -3,25 +3,11 @@
 import os
 import glob
 from util.xiaohongshu_client import XiaohongshuClient
+from util.console import print_success, print_error, print_info
 
 
 async def publish_content(content_json: dict, file_path: str = None, load_json_func=None) -> bool:
-    """发布图文到小红书
-    
-    参数:
-        content_json: 内容数据，格式如下：
-            {
-                "title": "标题",
-                "tags": ["标签1", "标签2"],
-                "content": "文案",
-                "images": ["url1", "url2"]
-            }
-        file_path: 内容目录路径
-        load_json_func: 加载 JSON 的函数
-    
-    返回:
-        成功返回 True，失败返回 False
-    """
+    """发布图文到小红书"""
     client = XiaohongshuClient(headless=False)
     
     await client.start()
@@ -30,11 +16,11 @@ async def publish_content(content_json: dict, file_path: str = None, load_json_f
     is_logged_in = await client.check_login()
     
     if not is_logged_in:
-        print("🔐 需要登录小红书...")
+        print_info("需要登录小红书...")
         success = await client.login()
         if not success:
-            print("❌ 登录失败")
-            print("🔍 请在浏览器中排查问题，关闭浏览器后程序继续...")
+            print_error("登录失败")
+            print_info("请在浏览器中排查问题，关闭浏览器后程序继续...")
             await client.wait_for_close()
             return False
     
@@ -43,7 +29,7 @@ async def publish_content(content_json: dict, file_path: str = None, load_json_f
         content_json = load_json_func(file_path)
     
     if not content_json:
-        print("❌ 没有内容可发布")
+        print_error("没有内容可发布")
         await client.close()
         return False
     
@@ -51,13 +37,13 @@ async def publish_content(content_json: dict, file_path: str = None, load_json_f
     image_paths = []
     if file_path:
         abs_file_path = os.path.abspath(file_path)
-        print(f"📁 图片目录: {abs_file_path}")
+        print_info(f"图片目录: {abs_file_path}")
         png_files = sorted(glob.glob(os.path.join(abs_file_path, "*.png")))
         image_paths = png_files
-        print(f"📷 找到 {len(image_paths)} 张图片: {[os.path.basename(f) for f in image_paths]}")
+        print_info(f"找到 {len(image_paths)} 张图片")
     
     if not image_paths:
-        print("❌ 没有找到本地图片")
+        print_error("没有找到本地图片")
         await client.close()
         return False
     
@@ -74,12 +60,10 @@ async def publish_content(content_json: dict, file_path: str = None, load_json_f
     )
     
     if success:
-        # 等待用户关闭浏览器
         await client.wait_for_close()
         return True
     else:
-        print("❌ 小红书内容填写失败")
-        print("🔍 请在浏览器中排查问题，关闭浏览器后程序继续...")
+        print_error("小红书内容填写失败")
+        print_info("请在浏览器中排查问题，关闭浏览器后程序继续...")
         await client.wait_for_close()
         return False
-

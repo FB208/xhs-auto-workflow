@@ -1,31 +1,19 @@
 """加载动画工具"""
 
-import sys
-import asyncio
+from rich.console import Console
+
+console = Console()
 
 
-async def show_loading(task):
-    """显示加载动画直到任务完成
+async def ai_loading(coroutine, message: str = "正在生成请稍后..."):
+    """显示加载动画直到异步任务完成
     
     使用方法:
-        task = asyncio.create_task(client.chat_history("你好"))
-        response = await show_loading(task)
-        print(response)
-    
-    参数:
-        task: asyncio.Task 对象
-    
-    返回:
-        task 的执行结果
+        response = await ai_loading(client.chat_history("你好"))
+        
+        # 自定义提示文字
+        response = await ai_loading(client.chat_history("你好"), "思考中...")
     """
-    chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    i = 0
-    while not task.done():
-        sys.stdout.write(f"\r{chars[i % len(chars)]} 正在生成请稍后...")
-        sys.stdout.flush()
-        i += 1
-        await asyncio.sleep(0.1)
-    sys.stdout.write("\r" + " " * 30 + "\r")
-    sys.stdout.flush()
-    return task.result()
-
+    with console.status(f"[bold cyan]{message}[/bold cyan]", spinner="dots"):
+        result = await coroutine
+    return result

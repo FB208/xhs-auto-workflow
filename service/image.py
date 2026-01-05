@@ -2,10 +2,10 @@
 
 import os
 import json
-import asyncio
 import glob
-from util.loading import show_loading
+from util.loading import ai_loading
 from util.piclist_client import upload_by_path
+from util.console import print_success, print_error, print_info
 
 
 async def generate_images(client, content_json: dict, file_path: str):
@@ -24,7 +24,7 @@ async def generate_images(client, content_json: dict, file_path: str):
         2. 将图片链接存入 file_path/content.json 的 images 字段
     """
     if not content_json or "image_prompt" not in content_json:
-        print("❌ content_json 无效或缺少 content 字段")
+        print_error("content_json 无效或缺少 image_prompt 字段")
         return []
     
     contents = content_json["image_prompt"]
@@ -33,45 +33,24 @@ async def generate_images(client, content_json: dict, file_path: str):
     
     # 生成图片
     for i, item in enumerate(contents, 1):
-        print(f"\n🎨 正在生成第 {i}/{len(contents)} 张图片...")
-        task = asyncio.create_task(client.image_history(f"开始生成第{i}张图片，要求宽高比3:4,清爽风格的风格，图片内容：\n{item}", file_path,i))
-        response = await show_loading(task)
-        print(response)
+        print_info(f"正在生成第 {i}/{len(contents)} 张图片...")
+        response = await ai_loading(
+            client.image_history(f"开始生成第{i}张图片，要求宽高比3:4，图片内容：\n{item}", file_path, i),
+            f"🎨 生成第 {i}/{len(contents)} 张图片..."
+        )
+        print_success(f"第 {i} 张图片生成完成")
     
-    # 上传图片
-    # print("\n📤 正在上传图片...")
-    # png_files = sorted(glob.glob(os.path.join(file_path, "*.png")))
-    
-    # if not png_files:
-    #     print("❌ 未找到 png 图片")
-    #     return []
-    
-    # PicList 需要绝对路径
-    # abs_png_files = [os.path.abspath(f) for f in png_files]
-    # print(f"找到 {len(abs_png_files)} 张图片: {[os.path.basename(f) for f in abs_png_files]}")
-    
-    # 上传到图床
-    # image_urls = await upload_by_path(abs_png_files)
-    
-    # if image_urls:
-    #     # 更新 content.json
-    #     content_json["images"] = image_urls
-        
-    #     json_path = os.path.join(file_path, "content.json")
-    #     with open(json_path, "w", encoding="utf-8") as f:
-    #         json.dump(content_json, f, ensure_ascii=False, indent=2)
-        
-    #     print(f"✅ content.json 已更新，添加 {len(image_urls)} 个图片链接")
-    
-    # return image_urls
+    print_success(f"全部 {len(contents)} 张图片生成完成")
+
 
 async def re_generate_images(client, content_json: dict, file_path: str, image_index: int):
-    """重新生成x图片
-    """
+    """重新生成指定图片"""
     contents = content_json["image_prompt"]
-    item = contents[image_index]
-    print(f"\n🎨 正在重新生成第 {image_index} 张图片...")
-    task = asyncio.create_task(client.image_history(f"开始重新生成第{image_index}张图片，要求宽高比3:4,清爽风格的风格，图片内容：\n{item}", file_path,image_index))
-    response = await show_loading(task)
-    print(response)
+    item = contents[image_index - 1]  # 用户输入从1开始
     
+    print_info(f"正在重新生成第 {image_index} 张图片...")
+    response = await ai_loading(
+        client.image_history(f"开始重新生成第{image_index}张图片，要求宽高比3:4，图片内容：\n{item}", file_path, image_index),
+        f"🎨 重新生成第 {image_index} 张图片..."
+    )
+    print_success(f"第 {image_index} 张图片重新生成完成")

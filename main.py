@@ -2,7 +2,6 @@ import asyncio
 import time
 from dotenv import load_dotenv
 from ai_client import create_client
-from util.loading import show_loading
 from service.content import topic_discussion, content_creation, generate_json
 from service.image import generate_images, re_generate_images
 from service.publish import publish_content as publish_content_mcp  # MCP 版本备用
@@ -10,6 +9,7 @@ from service.publish_xiaohongshu import publish_content as publish_xiaohongshu  
 from service.publish_douyin import publish_content as publish_douyin
 from service.publish_weixin import publish_content as publish_weixin
 from util.json_util import save_json, load_json
+from util.console import console, print_warning, print_info
 
 load_dotenv()
 
@@ -18,27 +18,27 @@ async def main():
     client = create_client()
     content_json = None
     file_path = f"output/{time.strftime('%Y%m%d%H%M%S')}"
- # 测试用
+    # 测试用
     # file_path = "output/20260105095543"
     # content_json = load_json(file_path)
     
     while True:
-        print("""
-1. 创建内容
-2. 生成图片
-3. 发布
-4. 退出
-              """)
+        console.print("""
+[bold cyan]1.[/] 创建内容
+[bold cyan]2.[/] 生成图片
+[bold cyan]3.[/] 发布
+[bold cyan]4.[/] 退出
+        """)
         command = input("请输入命令: ")
         match command:
             case "1":
                 while True:
-                    print("""
-1. 选题探讨
-2. 内容创作
-3. 生成json
-0. 返回上级
-                          """)
+                    console.print("""
+[bold cyan]1.[/] 选题探讨
+[bold cyan]2.[/] 内容创作
+[bold cyan]3.[/] 生成json
+[bold cyan]0.[/] 返回上级
+                    """)
                     command = input("请输入命令: ")
                     match command:
                         case "1":
@@ -51,30 +51,30 @@ async def main():
                         case "0":
                             break
                         case _:
-                            print("无效命令")
+                            print_warning("无效命令")
 
             case "2":
                 content_json = load_json(file_path)
                 await generate_images(client, content_json, file_path)
                 while True:
-                    print("您对那张图片不满意？可以修改content.json中的image_prompt，然后重新生成图片")
-                    command = input("请输入图片序号，或者输入OK继续下一步: ")
+                    print_info("您对那张图片不满意？可以修改 content.json 中的 image_prompt，然后重新生成图片")
+                    command = input("请输入图片序号，或者输入 ok 继续下一步: ")
                     match command:
                         case command if command.isdigit():
                             content_json = load_json(file_path)
                             await re_generate_images(client, content_json, file_path, int(command))
-                        case "OK":
+                        case "ok":
                             break
                         case _:
-                            print("无效命令，请输入图片序号，或者输入OK继续下一步")
+                            print_warning("无效命令，请输入图片序号或 ok")
             case "3":
                 while True:
-                    print("""
-1. 发布小红书
-2. 发布抖音
-3. 发布视频号
-0. 返回上级
-                          """)
+                    console.print("""
+[bold cyan]1.[/] 发布小红书
+[bold cyan]2.[/] 发布抖音
+[bold cyan]3.[/] 发布视频号
+[bold cyan]0.[/] 返回上级
+                    """)
                     command = input("请输入命令: ")
                     match command:
                         case "1":
@@ -86,12 +86,12 @@ async def main():
                         case "0":
                             break
                         case _:
-                            print("无效命令")
+                            print_warning("无效命令")
             case "4":
-                print("退出")
+                print_info("退出")
                 break
             case _:
-                print("无效命令")
+                print_warning("无效命令")
 
 
 if __name__ == "__main__":
