@@ -4,6 +4,7 @@ import json
 import asyncio
 from util.loading import show_loading
 from util.json_util import extract_json
+from util.console import print_markdown, print_ai_response
 
 
 async def topic_discussion(client):
@@ -14,7 +15,7 @@ async def topic_discussion(client):
                                                      选题面向中小企业老板。
                                                      """))
     response = await show_loading(task)
-    print(response)
+    print_ai_response(response, title="Gemini")
     
     while True:
         command = input("继续对话，或者输入'ok'继续下一步：")
