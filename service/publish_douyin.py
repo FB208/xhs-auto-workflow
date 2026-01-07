@@ -17,10 +17,10 @@ async def publish_content(content_json: dict, file_path: str = None, load_json_f
     
     if not is_logged_in:
         print_info("需要登录抖音...")
-        success = await client.login()
-        if not success:
-            print_error("登录失败")
-            return False
+        print_info("请在浏览器中完成登录（扫码+验证码），登录成功后按回车继续...")
+        
+        # 等待用户手动登录（不会刷新页面）
+        await client.wait_for_manual_login()
     
     # 尝试加载内容
     if not content_json and file_path and load_json_func:
@@ -59,8 +59,9 @@ async def publish_content(content_json: dict, file_path: str = None, load_json_f
         await client.wait_for_close()
         return True
     else:
-        print_error("抖音内容填写失败")
-        await client.close()
+        print_error("抖音内容填写失败，可能未登录或页面有问题")
+        print_info("请在浏览器中检查并手动操作，完成后关闭浏览器")
+        await client.wait_for_close()
         return False
 
 

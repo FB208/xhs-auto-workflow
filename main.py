@@ -19,7 +19,7 @@ async def main():
     content_json = None
     file_path = f"output/{time.strftime('%Y%m%d%H%M%S')}"
     # 测试用
-    # file_path = "output/20260105095543"
+    # file_path = "output/20260107134853"
     # content_json = load_json(file_path)
     
     while True:

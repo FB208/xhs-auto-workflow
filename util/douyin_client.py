@@ -50,10 +50,50 @@ async def check_login(page: Page) -> bool:
         await page.wait_for_load_state("networkidle", timeout=15000)
         await human_delay(2000, 4000)
         
+        # 检查 URL 是否包含 login
         if "login" in page.url:
+            print_info("检测到登录页面 URL")
             return False
         
-        return True
+        # 检查页面上是否有登录相关元素（二维码、登录按钮等）
+        login_selectors = [
+            'div[class*="qrcode"]',  # 二维码
+            'div[class*="login"]',   # 登录容器
+            'img[class*="qrcode"]',  # 二维码图片
+            'text=扫码登录',
+            'text=请使用抖音App扫码登录',
+        ]
+        
+        for selector in login_selectors:
+            try:
+                element = page.locator(selector).first
+                if await element.is_visible(timeout=1000):
+                    print_info(f"检测到登录元素: {selector}")
+                    return False
+            except:
+                pass
+        
+        # 检查是否有创作者中心的特征元素（确认已登录）
+        creator_selectors = [
+            'text=创作者中心',
+            'text=发布作品',
+            'div[class*="user-avatar"]',
+            'div[class*="header-user"]',
+        ]
+        
+        for selector in creator_selectors:
+            try:
+                element = page.locator(selector).first
+                if await element.is_visible(timeout=1000):
+                    print_success("检测到已登录状态")
+                    return True
+            except:
+                pass
+        
+        # 如果没有明确的登录/已登录标识，保守地认为未登录
+        print_warning("无法确认登录状态，请手动确认")
+        return False
+        
     except Exception as e:
         print_error(f"检查登录状态失败: {e}")
         return False
@@ -205,6 +245,25 @@ class DouyinClient:
     
     async def login(self) -> bool:
         return await login_with_qrcode(self.page, self.context)
+    
+    async def wait_for_manual_login(self):
+        """等待用户手动完成登录（不刷新页面）"""
+        # 检查当前页面是否已经是登录页面，如果不是才导航
+        current_url = self.page.url
+        if "creator.douyin.com" not in current_url:
+            await self.page.goto("https://creator.douyin.com/creator-micro/home")
+            await self.page.wait_for_load_state("networkidle")
+        
+        print_info("请在浏览器中扫码登录抖音（需要输入短信验证码）")
+        print_warning("⚠️ 登录完成后再按回车，不要提前按！")
+        
+        # 使用 asyncio 在后台等待用户输入
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, lambda: input("登录完成后按回车键继续..."))
+        
+        # 保存 cookies（不刷新页面）
+        await save_cookies(self.context)
+        print_success("已保存登录状态")
     
     async def upload_images(self, image_paths: list[str], title: str, content: str = "", tags: list[str] = None) -> bool:
         return await upload_images(self.page, image_paths, title, content, tags)
