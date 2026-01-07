@@ -27,7 +27,8 @@ async def main():
 [bold cyan]1.[/] 创建内容
 [bold cyan]2.[/] 生成图片
 [bold cyan]3.[/] 发布
-[bold cyan]4.[/] 退出
+[bold cyan]4.[/] 从文件加载内容
+[bold cyan]0.[/] 退出
         """)
         command = input("请输入命令: ")
         match command:
@@ -88,6 +89,9 @@ async def main():
                         case _:
                             print_warning("无效命令")
             case "4":
+                content_json = load_json(file_path)
+                console.print(content_json)
+            case "0":
                 print_info("退出")
                 break
             case _:
