@@ -1,9 +1,13 @@
 """内容创作服务"""
 
 import json
+import asyncio
+import threading
 from util.loading import ai_loading
 from util.json_util import extract_json
-from util.console import print_ai_response
+from util.console import print_ai_response, print_success, print_warning, console
+from util.txt_util import add_subject
+from ai_client import create_client
 
 
 async def topic_discussion(client):
@@ -60,8 +64,47 @@ async def generate_json(client) -> dict:
     
     try:
         result = extract_json(response)
+        # 使用线程启动后台任务（不受 input() 阻塞影响）
+        # 注意：不传递 client，因为异步客户端绑定到原事件循环，需要在新线程中创建新实例
+        thread = threading.Thread(
+            target=_run_summarize_in_thread,
+            args=(result,),
+            daemon=True
+        )
+        thread.start()
         print("\n✅ JSON 解析成功")
         return result
     except (ValueError, json.JSONDecodeError) as e:
         print(f"\n❌ JSON 解析失败: {e}")
         return None
+
+
+def _run_summarize_in_thread(content_json: dict):
+    """在新线程中运行异步总结任务"""
+    # 抑制 loguru 日志输出（gemini_webapi 使用 loguru）
+    from loguru import logger
+    logger.remove()  # 移除所有 handler，静默 gemini_webapi 日志
+    
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(_summarize_content(content_json))
+    finally:
+        loop.close()
+
+
+async def _summarize_content(content_json: dict):
+    """后台任务：总结当前内容"""
+    console.print("[dim]📝 后台总结任务已启动[/dim]")
+    
+    try:
+        # 在新线程中创建新的 client 实例
+        client = create_client()
+        summary = await client.chat(
+            "以下是自媒体创造的内容，为了以后不重复生成该主题，你需要分析并总结出一个非常简短的主题，"
+            "直接返回总结后的主题，除此之外不要返回任何其他内容。内容如下：\n" 
+            + json.dumps(content_json, ensure_ascii=False)
+        )
+        add_subject(summary.strip())
+    except Exception:
+        pass  # 静默失败
