@@ -8,15 +8,13 @@ from util.json_util import extract_json
 from util.console import print_ai_response, print_success, print_warning, console
 from util.txt_util import add_subject
 from ai_client import create_client
+from prompt.topic_discussion import topic_discussion_prompt
 
 
-async def topic_discussion(client):
+async def topic_discussion(client, command):
     """选题探讨"""
-    response = await ai_loading(client.chat_history("""我们一起来为易标AI生成自媒体推广选题工作。
-                                                     易标AI是一款用AI生成投标技术方案的工具，具备智能解析招标文件、快速生成投标文件、标书查重等功能。
-                                                     你需要联网搜索关于AI写标书和易标AI的相关资料，生成5个选题。
-                                                     选题面向中小企业老板。
-                                                     """))
+    prompt = topic_discussion_prompt(command)
+    response = await ai_loading(client.chat_history(prompt))
     print_ai_response(response, title="Gemini")
     
     while True:

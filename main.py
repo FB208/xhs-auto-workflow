@@ -43,7 +43,13 @@ async def main():
                     command = input("请输入命令: ")
                     match command:
                         case "1":
-                            await topic_discussion(client)
+                            console.print("""
+[bold cyan]1.[/] 易标AI老板视角
+[bold cyan]2.[/] 投标人喜欢收藏的内容-不带广
+[bold cyan]其他.[/] 不想使用任何预设，不输入序号，直接录入需求即可
+                    """)
+                            command = input("请输入命令: ")
+                            await topic_discussion(client, command)
                         case "2":
                             await content_creation(client)
                         case "3":
