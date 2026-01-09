@@ -27,20 +27,37 @@ async def generate_images(client, content_json: dict, file_path: str):
         print_error("content_json 无效或缺少 image_prompt 字段")
         return []
     
-    contents = content_json["image_prompt"]
+    image_prompts = content_json["image_prompt"]
     
     client.reset_chat()
     
-    # 生成图片
-    for i, item in enumerate(contents, 1):
-        print_info(f"正在生成第 {i}/{len(contents)} 张图片...")
+    # 批量生成
+    # image_prompts_str = "\n".join([f"{i+1}. {desc}" for i, desc in enumerate(image_prompts)])
+    # prompt = f"""
+    # 按照如下提示词，使用nano banana pro分别生成{len(image_prompts)}张图片，每张图片宽高比都是3:4，注意保持风格一致，图片描述如下，不要遗漏：
+    # {image_prompts_str}
+    # """
+    # response = await ai_loading(
+    #     client.image_history(prompt, file_path,None),
+    #     f"🎨 正在批量生成图片"
+    # )
+    # print_success(f"封面首图生成完成")
+    
+    # 单条生成
+    # response = await ai_loading(
+    #         client.image_history(f"帮我用nano banana pro生成图片，每张图片的宽高比都是3:4，注意保持风格一致，你准备好了吗？", file_path, None),
+    #         f"🎨 正在准备生成图片..."
+    #     )
+    # print_success(f"response")
+    for i, item in enumerate(image_prompts, 1):
+        print_info(f"正在生成第 {i}/{len(image_prompts)} 张图片...")
         response = await ai_loading(
             client.image_history(f"开始生成第{i}张图片，要求宽高比3:4，图片内容：\n{item}", file_path, i),
-            f"🎨 生成第 {i}/{len(contents)} 张图片..."
+            f"🎨 生成第 {i}/{len(image_prompts)} 张图片..."
         )
         print_success(f"第 {i} 张图片生成完成")
     
-    print_success(f"全部 {len(contents)} 张图片生成完成")
+    print_success(f"全部 {len(image_prompts)} 张图片生成完成")
 
 
 async def re_generate_images(client, content_json: dict, file_path: str, image_index: int):
@@ -54,3 +71,14 @@ async def re_generate_images(client, content_json: dict, file_path: str, image_i
         f"🎨 重新生成第 {image_index} 张图片..."
     )
     print_success(f"第 {image_index} 张图片重新生成完成")
+    
+async def edit_image(client,file_path: str,image_index: str,requirement: str):
+    """编辑图片"""
+    client.reset_chat()
+    image_path = os.path.abspath(os.path.join(file_path, f"{image_index}.png"))
+    print_info(f"编辑图片: {image_path}")
+    response = await ai_loading(
+        client.image(f"{requirement}", file_path, image_index, image_path),
+        f"🎨 重新生成第 {image_index} 张图片..."
+    )
+    print_success(f"第 {image_index} 张图片编辑完成")

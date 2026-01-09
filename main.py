@@ -3,7 +3,7 @@ import time
 from dotenv import load_dotenv
 from ai_client import create_client
 from service.content import topic_discussion, content_creation, generate_json
-from service.image import generate_images, re_generate_images
+from service.image import generate_images, re_generate_images, edit_image
 from service.publish import publish_content as publish_content_mcp  # MCP 版本备用
 from service.publish_xiaohongshu import publish_content as publish_xiaohongshu  # Playwright 版本
 from service.publish_douyin import publish_content as publish_douyin
@@ -17,10 +17,10 @@ load_dotenv()
 async def main():
     client = create_client()
     content_json = None
-    file_path = f"output/{time.strftime('%Y%m%d%H%M%S')}"
+    # file_path = f"output/{time.strftime('%Y%m%d%H%M%S')}"
     # 测试用
-    # file_path = "output/20260107134853"
-    # content_json = load_json(file_path)
+    file_path = "output/20260109110444"
+    content_json = load_json(file_path)
     
     while True:
         console.print("""
@@ -61,19 +61,40 @@ async def main():
                             print_warning("无效命令")
 
             case "2":
-                content_json = load_json(file_path)
-                await generate_images(client, content_json, file_path)
                 while True:
-                    print_info("您对那张图片不满意？可以修改 content.json 中的 image_prompt，然后重新生成图片")
-                    command = input("请输入图片序号，或者输入 ok 继续下一步: ")
+                    
+                    console.print("""
+[bold cyan]1.[/] 根据对话结果生成
+[bold cyan]2.[/] 修改图片
+[bold cyan]0.[/] 返回上级
+                        """)
+                    command = input("请输入命令: ")
                     match command:
-                        case command if command.isdigit():
+                        case "1":
                             content_json = load_json(file_path)
-                            await re_generate_images(client, content_json, file_path, int(command))
-                        case "ok":
-                            break
-                        case _:
-                            print_warning("无效命令，请输入图片序号或 ok")
+                            await generate_images(client, content_json, file_path)
+                            while True:
+                                print_info("您对那张图片不满意？可以修改 content.json 中的 image_prompt，然后重新生成图片")
+                                command = input("请输入图片序号，或者输入 ok 继续下一步: ")
+                                match command:
+                                    case command if command.isdigit():
+                                        content_json = load_json(file_path)
+                                        await re_generate_images(client, content_json, file_path, int(command))
+                                    case "ok":
+                                        break
+                                    case _:
+                                        print_warning("无效命令，请输入图片序号或 ok")
+                        case "2":
+                            while True:
+                                image_index = input("请输入图片序号（初始序号为1）输入0返回上级: ")
+                                match image_index:
+                                    case "0":
+                                        break
+                                    case command if command.isdigit():
+                                        requirement = input("请输入修改要求: ")
+                                        await edit_image(client, file_path, int(image_index), requirement)
+                                    case _:
+                                        print_warning("无效命令，请输入图片序号或0返回上级")
             case "3":
                 while True:
                     console.print("""

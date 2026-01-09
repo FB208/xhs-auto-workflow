@@ -17,7 +17,7 @@ class AIClient(ABC):
         pass
     
     @abstractmethod
-    async def image_history(self, message: str) -> str:
+    async def image_history(self, message: str, file_path: str,file_name: str,upload_image_path: str) -> str:
         """生成图片，保留历史记录"""
         pass
     
