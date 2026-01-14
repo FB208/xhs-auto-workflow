@@ -50,49 +50,18 @@ async def check_login(page: Page) -> bool:
         await page.wait_for_load_state("networkidle", timeout=15000)
         await human_delay(2000, 4000)
         
-        # 检查 URL 是否包含 login
-        if "login" in page.url:
-            print_info("检测到登录页面 URL")
-            return False
+        # 优先检测页面是否有"验证码登录"文字，有则说明未登录
+        try:
+            login_text = page.locator('text=验证码登录')
+            if await login_text.is_visible(timeout=2000):
+                print_info("检测到'验证码登录'，需要登录")
+                return False
+        except:
+            pass
         
-        # 检查页面上是否有登录相关元素（二维码、登录按钮等）
-        login_selectors = [
-            'div[class*="qrcode"]',  # 二维码
-            'div[class*="login"]',   # 登录容器
-            'img[class*="qrcode"]',  # 二维码图片
-            'text=扫码登录',
-            'text=请使用抖音App扫码登录',
-        ]
-        
-        for selector in login_selectors:
-            try:
-                element = page.locator(selector).first
-                if await element.is_visible(timeout=1000):
-                    print_info(f"检测到登录元素: {selector}")
-                    return False
-            except:
-                pass
-        
-        # 检查是否有创作者中心的特征元素（确认已登录）
-        creator_selectors = [
-            'text=创作者中心',
-            'text=发布作品',
-            'div[class*="user-avatar"]',
-            'div[class*="header-user"]',
-        ]
-        
-        for selector in creator_selectors:
-            try:
-                element = page.locator(selector).first
-                if await element.is_visible(timeout=1000):
-                    print_success("检测到已登录状态")
-                    return True
-            except:
-                pass
-        
-        # 如果没有明确的登录/已登录标识，保守地认为未登录
-        print_warning("无法确认登录状态，请手动确认")
-        return False
+        # 如果没有"验证码登录"，说明已登录
+        print_success("已自动登录（未检测到登录页面）")
+        return True
         
     except Exception as e:
         print_error(f"检查登录状态失败: {e}")

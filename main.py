@@ -19,7 +19,7 @@ async def main():
     content_json = None
     # file_path = f"output/{time.strftime('%Y%m%d%H%M%S')}"
     # 测试用
-    file_path = "output/20260109110444"
+    file_path = "output/20260112083438"
     content_json = load_json(file_path)
     
     while True:
@@ -95,6 +95,10 @@ async def main():
                                         await edit_image(client, file_path, int(image_index), requirement)
                                     case _:
                                         print_warning("无效命令，请输入图片序号或0返回上级")
+                        case "0":
+                            break
+                        case _:
+                            print_warning("无效命令")
             case "3":
                 while True:
                     console.print("""
